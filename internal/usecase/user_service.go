@@ -1,6 +1,7 @@
 package usecase
 
 import (
+	"errors"
 	"golang.org/x/crypto/bcrypt"
 	"user_service/internal/domain"
 )
@@ -13,13 +14,27 @@ func NewUserService(userRepo domain.UserRepository) domain.UserService {
 	return &UserService{userRepo: userRepo}
 }
 
+func (u *UserService) Authenticate(username, password string) (*domain.User, error) {
+	user, err := u.userRepo.GetByUsername(username)
+	if err != nil {
+		return nil, err
+	}
+
+	err = bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password))
+	if err != nil {
+		return nil, errors.New("invalid credentials")
+	}
+
+	return user, nil
+}
+
 func (u *UserService) Create(user *domain.User) error {
 	// Хэширование пароля
-	hashedPassword, err := hashPassword(user.Password)
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
 	if err != nil {
 		return err
 	}
-	user.PasswordHash = hashedPassword
+	user.PasswordHash = string(hashedPassword)
 
 	// Создание пользователя
 	return u.userRepo.Create(user)
@@ -53,18 +68,13 @@ func (u *UserService) Update(user *domain.User) error {
 
 	// Если предоставлен новый пароль, хэшируем его
 	if user.Password != "" {
-		hashedPassword, err := hashPassword(user.Password)
+		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
 		if err != nil {
 			return err
 		}
-		existingUser.PasswordHash = hashedPassword
+		existingUser.PasswordHash = string(hashedPassword)
 	}
 
 	// Обновляем пользователя
 	return u.userRepo.Update(existingUser)
-}
-
-func hashPassword(password string) (string, error) {
-	bytes, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
-	return string(bytes), err
 }

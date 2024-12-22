@@ -19,10 +19,12 @@ type UserRepository interface {
 	Create(user *User) error
 	GetByID(id int) (*User, error)
 	Update(user *User) error
+	GetByUsername(username string) (*User, error)
 }
 
 type UserService interface {
 	Create(user *User) error
 	GetByID(id int) (*User, error)
 	Update(user *User) error
+	Authenticate(username, password string) (*User, error)
 }

@@ -14,6 +14,34 @@ func NewUserRepository(database *sql.DB) domain.UserRepository {
 	return &userRepository{db: database}
 }
 
+func (r *userRepository) GetByUsername(username string) (*domain.User, error) {
+	user := &domain.User{}
+	query := `
+        SELECT id, username, email, password_hash, first_name, last_name, is_active, created_at, updated_at
+        FROM users WHERE username = $1`
+
+	err := r.db.QueryRow(query, username).Scan(
+		&user.ID,
+		&user.Username,
+		&user.Email,
+		&user.PasswordHash,
+		&user.FirstName,
+		&user.LastName,
+		&user.IsActive,
+		&user.CreatedAt,
+		&user.UpdatedAt,
+	)
+
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, domain.ErrUserNotFound
+		}
+		return nil, err
+	}
+
+	return user, nil
+}
+
 func (r *userRepository) Create(user *domain.User) error {
 	query := `
         INSERT INTO users (username, email, password_hash, first_name, last_name, is_active)

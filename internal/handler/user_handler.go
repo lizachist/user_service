@@ -21,6 +21,36 @@ func (h *UserHandler) Register(e *echo.Echo) {
 	e.POST("/users", h.CreateUser)
 	e.GET("/users/:id", h.GetUser)
 	e.PUT("/users/:id", h.UpdateUser)
+	e.POST("/auth", h.Authenticate)
+}
+
+func (h *UserHandler) Authenticate(c echo.Context) error {
+	var credentials struct {
+		Username string `json:"username"`
+		Password string `json:"password"`
+	}
+
+	if err := c.Bind(&credentials); err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid request payload"})
+	}
+
+	user, err := h.userService.Authenticate(credentials.Username, credentials.Password)
+	if err != nil {
+		return c.JSON(http.StatusUnauthorized, map[string]string{"error": "Invalid credentials"})
+	}
+
+	// Здесь вы можете создать JWT токен или сессию для аутентифицированного пользователя
+	// Например:
+	// token, err := createJWTToken(user)
+	// if err != nil {
+	//     return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to create token"})
+	// }
+
+	return c.JSON(http.StatusOK, map[string]interface{}{
+		"message": "Authentication successful",
+		"user":    user,
+		// "token":   token,
+	})
 }
 
 func (h *UserHandler) CreateUser(c echo.Context) error {
