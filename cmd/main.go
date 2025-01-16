@@ -2,8 +2,10 @@ package main
 
 import (
 	"database/sql"
+	"github.com/labstack/echo/v4/middleware"
 	"log"
 	"os"
+	customMiddleware "user_service/internal/middleware"
 
 	"github.com/joho/godotenv"
 	"github.com/labstack/echo/v4"
@@ -39,8 +41,18 @@ func main() {
 	// Инициализация Echo
 	e := echo.New()
 
-	// Регистрация маршрутов
+	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
+		AllowOrigins: []string{"http://localhost:3000"},
+		AllowHeaders: []string{echo.HeaderOrigin, echo.HeaderContentType, echo.HeaderAccept},
+	}))
+
 	userHandler.Register(e)
+
+	// Защищенные маршруты
+	protected := e.Group("")
+	protected.Use(customMiddleware.JWTMiddleware)
+	protected.GET("/users/:id", userHandler.GetUser)
+	protected.PUT("/users/:id", userHandler.UpdateUser)
 
 	// Запуск сервера
 	port := os.Getenv("PORT")

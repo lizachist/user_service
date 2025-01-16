@@ -16,8 +16,7 @@ func NewUserRepository(database *sql.DB) domain.UserRepository {
 
 func (r *userRepository) GetByUsername(username string) (*domain.User, error) {
 	user := &domain.User{}
-	query := `
-        SELECT id, username, email, password_hash, first_name, last_name, is_active, created_at, updated_at
+	query := `SELECT id, username, email, password_hash, first_name, last_name, is_active, created_at, updated_at
         FROM users WHERE username = $1`
 
 	err := r.db.QueryRow(query, username).Scan(
